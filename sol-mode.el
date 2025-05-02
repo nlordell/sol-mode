@@ -34,26 +34,70 @@
 
 ;;; Code:
 
+(require 'cc-langs)
 (require 'treesit)
+
+;;; -- Configuration --
 
 (defgroup solidity nil
   "Major mode for editing Solidity code."
   :prefix "solidity-"
   :group 'langauges)
 
+(defcustom solidity-indent-offset 2
+  "Number of spaces for indentation."
+  :type 'natnum
+  :safe #'natnump
+  :package-version '(sol-mode . "0.0.1"))
+
+;;; -- Utilities --
+
 (defconst solidity-language-source
   '(solidity . ("https://github.com/JoranHonig/tree-sitter-solidity"
-                "v1.2.11")))
+                "v1.2.11"))
+  "Tree-Sitter Solidity language source.")
+
+;;;###autoload
+(defun solidity-install-grammar ()
+  "Install the Solidity tree-sitter grammar."
+  (interactive)
+  (unless (treesit-language-available-p 'solidity)
+    (message "Installing Solidity tree-sitter grammar")
+    (let ((treesit-language-source-alist `(,solidity-language-source)))
+      (treesit-install-language-grammar 'solidity))))
+
+;;; -- Font Locking --
+
+(defconst sol-mode--font-lock-settings
+  (treesit-font-lock-rules
+   :default-language 'solidity
+
+   :feature 'comment
+   '((((comment) @font-lock-doc-face)
+      (:match "\\(?:///[^/]\\|/\\*\\*[^*]\\)" @font-lock-doc-face))
+     (comment) @font-lock-comment-face)
+
+   :feature 'string
+   '([(string)
+      (hex_string_literal)
+      (unicode_string_literal)
+      (yul_string_literal)] @font-lock-string-face))
+  "Font-lock settings for `sol-mode' buffers.")
+
+;;; -- Major Mode --
 
 (defvar sol-mode-syntax-table
   (let ((st (make-syntax-table)))
+    (c-populate-syntax-table st)
+    (modify-syntax-entry ?$ "_" st)
     st)
   "Syntax table used in `sol-mode' buffers.")
 
 (defvar sol-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map prog-mode-map)
-    map))
+    map)
+  "Mode map for `sol-mode' buffers.")
 
 ;;;###autoload
 (define-derived-mode sol-mode prog-mode "Solidity"
@@ -64,17 +108,20 @@ Key Bindings:
   :syntax-table sol-mode-syntax-table
   (when (treesit-ready-p 'solidity)
     (treesit-parser-create 'solidity)
+
+    (setq-local comment-start "// ")
+    (setq-local comment-end "")
+    (setq-local comment-start-skip "\\(?://+\\|/\\*+\\)\\s *")
+
+    (setq-local treesit-font-lock-settings sol-mode--font-lock-settings)
+    (setq-local treesit-font-lock-feature-list
+                '((comment)
+                  (string)))
+
     (treesit-major-mode-setup)))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.sol\\'" . sol-mode))
-
-(defun solidity-install-grammar ()
-  "Install the Solidity tree-sitter grammar."
-  (unless (treesit-language-available-p 'solidity)
-    (message "Installing Solidity tree-sitter grammar")
-    (let ((treesit-language-source-alist `(,solidity-language-source)))
-      (treesit-install-language-grammar 'solidity))))
 
 (provide 'sol-mode)
 ;;; sol-mode.el ends here
