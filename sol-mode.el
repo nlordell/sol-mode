@@ -41,6 +41,10 @@
   :prefix "solidity-"
   :group 'langauges)
 
+(defconst solidity-language-source
+  '(solidity . ("https://github.com/JoranHonig/tree-sitter-solidity"
+                "v1.2.11")))
+
 (defvar sol-mode-syntax-table
   (let ((st (make-syntax-table)))
     st)
@@ -58,10 +62,19 @@
 Key Bindings:
 \\{sol-mode-map}"
   :syntax-table sol-mode-syntax-table
-  (ignore))
+  (when (treesit-ready-p 'solidity)
+    (treesit-parser-create 'solidity)
+    (treesit-major-mode-setup)))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.sol\\'" . sol-mode))
+
+(defun solidity-install-grammar ()
+  "Install the Solidity tree-sitter grammar."
+  (unless (treesit-language-available-p 'solidity)
+    (message "Installing Solidity tree-sitter grammar")
+    (let ((treesit-language-source-alist `(,solidity-language-source)))
+      (treesit-install-language-grammar 'solidity))))
 
 (provide 'sol-mode)
 ;;; sol-mode.el ends here
