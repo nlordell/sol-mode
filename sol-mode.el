@@ -27,10 +27,18 @@
 ;; language designed for developing smart contracts that run on
 ;; Ethereum.
 
-;;; References
+;;; References:
+
 ;; https://github.com/ethereum/emacs-solidity/blob/master/solidity-mode.el
 ;; https://github.com/bbatsov/neocaml/blob/main/neocaml.el
 ;; https://www.masteringemacs.org/article/lets-write-a-treesitter-major-mode
+
+;;; TODO:
+
+;; - Upstream `type Foo = uint256` highlight
+;; - Upstream `boolean_literal` missing
+;; - Upstream `using Foo for type` highlight
+;; - Propose `// SPDX-License-Identifier:` highligh
 
 ;;; Code:
 
