@@ -122,6 +122,8 @@
       (user_defined_type (identifier) @font-lock-type-face))
      (type_name
       "mapping" @font-lock-builtin-face)
+     (import_directive
+      import_name: (identifier) @font-lock-type-face)
      (contract_declaration
       name: (identifier) @font-lock-type-face)
      (inheritance_specifier
@@ -144,38 +146,18 @@
      [(primitive_type)
       (number_unit)] @font-lock-type-face)
 
-   ;; TODO: state variable declaration
-   ;; (state_variable_declaration name: (identifier))
-
-   :feature 'function
+   :feature 'definition
    '((function_definition
       name: (identifier) @font-lock-function-name-face)
      (modifier_definition
       name: (identifier) @font-lock-function-name-face)
-     (yul_evm_builtin) @font-lock-builtin-face
      (constructor_definition
       "constructor" @font-lock-function-name-face)
-     (modifier_invocation
-      (identifier) @font-lock-function-name-face)
-     (call_expression
-      :anchor
-      (expression
-       (member_expression
-        (identifier) @font-lock-function-call-face)))
-     (call_expression
-      :anchor
-      (expression (identifier) @font-lock-function-call-face))
-     (event_parameter
-      name: (_) @font-lock-variable-name-face)
-     (parameter
-      name: (_) @font-lock-variable-name-face)
-     (yul_function_call
-      function: (yul_identifier) @font-lock-function-call-face)
+     (state_variable_declaration
+      name: (identifier) @font-lock-variable-name-face)
      (yul_function_definition
       :anchor
-      (yul_identifier) @font-lock-function-name-face
-      (yul_identifier) @font-lock-variable-name-face)
-     (meta_type_expression "type" @keyword)
+      (yul_identifier) @font-lock-function-name-face )
      (member_expression
       property: (_) @font-lock-property-name-face)
      (call_struct_argument
@@ -184,18 +166,54 @@
       name: (identifier) @font-lock-property-name-face)
      (enum_value) @font-lock-constant-face)
 
+   ;; TODO: do we need this?
+   ;; (meta_type_expression "type")
+
+   :feature 'parameter
+   '((event_parameter
+      name: (_) @font-lock-variable-name-face)
+     (parameter
+      name: (_) @font-lock-variable-name-face)
+     (yul_function_definition
+      :anchor
+      (yul_identifier) @font-lock-function-name-face
+      (yul_identifier) @font-lock-variable-name-face))
+
+   :feature 'function
+   ;; function calls
+   '((modifier_invocation
+      (identifier) @font-lock-function-name-face)
+     (call_expression
+      :anchor
+      (expression
+       (member_expression
+        property: (identifier) @font-lock-function-call-face)))
+     (call_expression
+      :anchor
+      (expression (identifier) @font-lock-function-call-face))
+     (yul_function_call
+      function: (yul_identifier) @font-lock-function-call-face))
+
+   :feature 'builtin
+   '((yul_evm_builtin) @font-lock-builtin-face)
+
+   :feature 'keyword
+   '(["function"] @font-lock-keyword-face)
+
    :feature 'comment
    '((((comment) @font-lock-preprocessor-face)
       (:match "// SPDX-License-Identifier:" @font-lock-preprocessor-face))
+     (((comment) @font-lock-preprocessor-face)
+      (:match "/// @solidity" @font-lock-preprocessor-face))
      (((comment) @font-lock-doc-face)
       (:match "\\(?:///[^/]\\|/\\*\\*[^*]\\)" @font-lock-doc-face))
      (comment) @font-lock-comment-face))
   "Font-lock settings for `sol-mode' buffers.")
 
 (defconst sol-mode--font-lock-feature-list
-  '((comment pragma)
-    (string number boolean)
-    (type function)
+  '((comment definition)
+    (keyword string number boolean)
+    (pragma type function parameter builtin)
     (variable))
   "Font-lock feature list for `sol-mode' buffers.")
 
