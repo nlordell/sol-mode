@@ -66,32 +66,132 @@
     (let ((treesit-language-source-alist `(,solidity-language-source)))
       (treesit-install-language-grammar 'solidity))))
 
+;;; -- Syntax Table --
+
+(defvar sol-mode--syntax-table
+  (let ((st (make-syntax-table)))
+    (c-populate-syntax-table st)
+    (modify-syntax-entry ?$ "_" st)
+    st)
+  "Syntax table used in `sol-mode' buffers.")
+
 ;;; -- Font Locking --
 
 (defconst sol-mode--font-lock-settings
   (treesit-font-lock-rules
    :default-language 'solidity
 
-   :feature 'comment
-   '((((comment) @font-lock-doc-face)
-      (:match "\\(?:///[^/]\\|/\\*\\*[^*]\\)" @font-lock-doc-face))
-     (comment) @font-lock-comment-face)
+   :feature 'pragma
+   '(["pragma" "solidity"] @font-lock-preprocessor-face
+     (solidity_pragma_token "||" @font-lock-string-face)
+     (solidity_pragma_token "-" @font-lock-string-face)
+     (solidity_version_comparison_operator) @font-lock-operator-face
+     (solidity_version) @font-lock-string-face)
 
    :feature 'string
-   '([(string)
-      (hex_string_literal)
-      (unicode_string_literal)
-      (yul_string_literal)] @font-lock-string-face))
+   '((hex_string_literal "hex" @font-lock-string-face
+                         (_) @font-lock-string-face)
+     (unicode_string_literal "unicode" @font-lock-string-face
+                             (_) @font-lock-string-face)
+     [(string)
+      (yul_string_literal)] @font-lock-string-face)
+   :feature 'number
+   '([(number_literal)
+      (yul_decimal_number)
+      (yul_hex_number)] @font-lock-number-face)
+   :feature 'boolean
+   '([(boolean_literal)
+      (yul_boolean)] @font-lock-constant-face)
+
+   :feature 'variable
+   '([(identifier)
+      (yul_identifier)] @font-lock-variable-name-face)
+
+   :feature 'type
+   '((type_name
+      (identifier) @font-lock-type-face)
+     (type_name
+      (user_defined_type (identifier) @font-lock-type-face))
+     (type_name
+      "mapping" @font-lock-builtin-face)
+     (contract_declaration
+      name: (identifier) @font-lock-type-face)
+     (inheritance_specifier
+      ancestor: (user_defined_type (identifier) @font-lock-type-face))
+     (using_directive
+      (type_alias (identifier) @font-lock-type-face))
+     (struct_declaration
+      name: (identifier) @font-lock-type-face)
+     (struct_member
+      name: (identifier) @font-lock-property-name-face)
+     (enum_declaration
+      name: (identifier) @font-lock-type-face)
+     (emit_statement
+      :anchor
+      (expression (identifier)) @font-lock-type-face)
+     (user_defined_type_definition
+      name: (identifier) @font-lock-type-face)
+     (override_specifier
+      (user_defined_type) @font-lock-type-face)
+     [(primitive_type)
+      (number_unit)] @font-lock-type-face)
+
+   ;; TODO: state variable declaration
+   ;; (state_variable_declaration name: (identifier))
+
+   :feature 'function
+   '((function_definition
+      name: (identifier) @font-lock-function-name-face)
+     (modifier_definition
+      name: (identifier) @font-lock-function-name-face)
+     (yul_evm_builtin) @font-lock-builtin-face
+     (constructor_definition
+      "constructor" @font-lock-function-name-face)
+     (modifier_invocation
+      (identifier) @font-lock-function-name-face)
+     (call_expression
+      :anchor
+      (expression
+       (member_expression
+        (identifier) @font-lock-function-call-face)))
+     (call_expression
+      :anchor
+      (expression (identifier) @font-lock-function-call-face))
+     (event_parameter
+      name: (_) @font-lock-variable-name-face)
+     (parameter
+      name: (_) @font-lock-variable-name-face)
+     (yul_function_call
+      function: (yul_identifier) @font-lock-function-call-face)
+     (yul_function_definition
+      :anchor
+      (yul_identifier) @font-lock-function-name-face
+      (yul_identifier) @font-lock-variable-name-face)
+     (meta_type_expression "type" @keyword)
+     (member_expression
+      property: (_) @font-lock-property-name-face)
+     (call_struct_argument
+      name: (_) @font-lock-property-name-face)
+     (struct_field_assignment
+      name: (identifier) @font-lock-property-name-face)
+     (enum_value) @font-lock-constant-face)
+
+   :feature 'comment
+   '((((comment) @font-lock-preprocessor-face)
+      (:match "// SPDX-License-Identifier:" @font-lock-preprocessor-face))
+     (((comment) @font-lock-doc-face)
+      (:match "\\(?:///[^/]\\|/\\*\\*[^*]\\)" @font-lock-doc-face))
+     (comment) @font-lock-comment-face))
   "Font-lock settings for `sol-mode' buffers.")
 
-;;; -- Major Mode --
+(defconst sol-mode--font-lock-feature-list
+  '((comment pragma)
+    (string number boolean)
+    (type function)
+    (variable))
+  "Font-lock feature list for `sol-mode' buffers.")
 
-(defvar sol-mode-syntax-table
-  (let ((st (make-syntax-table)))
-    (c-populate-syntax-table st)
-    (modify-syntax-entry ?$ "_" st)
-    st)
-  "Syntax table used in `sol-mode' buffers.")
+;;; -- Major Mode --
 
 (defvar sol-mode-map
   (let ((map (make-sparse-keymap)))
@@ -105,7 +205,7 @@
 
 Key Bindings:
 \\{sol-mode-map}"
-  :syntax-table sol-mode-syntax-table
+  :syntax-table sol-mode--syntax-table
   (when (treesit-ready-p 'solidity)
     (treesit-parser-create 'solidity)
 
@@ -114,9 +214,7 @@ Key Bindings:
     (setq-local comment-start-skip "\\(?://+\\|/\\*+\\)\\s *")
 
     (setq-local treesit-font-lock-settings sol-mode--font-lock-settings)
-    (setq-local treesit-font-lock-feature-list
-                '((comment)
-                  (string)))
+    (setq-local treesit-font-lock-feature-list sol-mode--font-lock-feature-list)
 
     (treesit-major-mode-setup)))
 
