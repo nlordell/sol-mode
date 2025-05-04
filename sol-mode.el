@@ -40,9 +40,11 @@
 ;; - Upstream `using Foo for type` highlight
 ;; - Upstream `error Foo()` highlight
 ;; - Propose `// SPDX-License-Identifier:` highligh
+;; - Upstream `transient` highlight
 
 ;;; Code:
 
+(require 'c-ts-common)
 (require 'cc-langs)
 (require 'treesit)
 
@@ -51,9 +53,9 @@
 (defgroup solidity nil
   "Major mode for editing Solidity code."
   :prefix "solidity-"
-  :group 'langauges)
+  :group 'languages)
 
-(defcustom solidity-indent-offset 2
+(defcustom solidity-indent-offset 4
   "Number of spaces for indentation."
   :type 'natnum
   :safe #'natnump
@@ -75,9 +77,25 @@
     (let ((treesit-language-source-alist `(,solidity-language-source)))
       (treesit-install-language-grammar 'solidity))))
 
+;;; -- DEBUG --
+
+(keymap-global-set
+ "C-c C-x"
+ (lambda ()
+   (interactive)
+   (eval-buffer "sol-mode.el")
+   (with-current-buffer "Safe.sol"
+     (revert-buffer-quick)
+     (setq-local treesit--indent-verbose t))))
+(keymap-global-set
+ "C-c C-s"
+ (lambda ()
+   (interactive)
+   (treesit-explore-mode +1)))
+
 ;;; -- Font Locking --
 
-(defconst sol-mode--font-lock-settings
+(defvar sol-mode--font-lock-settings
   (treesit-font-lock-rules
    :default-language 'solidity
 
@@ -126,6 +144,8 @@
       name: (identifier) @font-lock-type-face)
      (error_declaration
       name: (identifier) @font-lock-type-face)
+     (constant_variable_declaration
+      name: (identifier) @font-lock-variable-name-face)
      (state_variable_declaration
       name: (identifier) @font-lock-variable-name-face)
      (yul_function_definition
@@ -194,12 +214,19 @@
 
    :feature 'builtin
    :override t
-   '((((member_expression
+   `((((member_expression
         object: (identifier) @font-lock-builtin-face property: (identifier)))
-      (:match "\\`\\(?:abi\\|block\\|msg\\|tx\\)\\'" @font-lock-builtin-face))
+      (:match
+       ,(rx bos (| "abi" "block" "msg" "tx") eos)
+       @font-lock-builtin-face))
      (((call_expression
         function: (expression (identifier)) @font-lock-builtin-face))
-      (:match "\\`\\(?:addmod\\|assert\\|blobhash\\|blockhash\\|ecrecover\\|gasleft\\|keccak256\\|mulmod\\|require\\|ripemd160\\|selfdestruct\\|sha256\\)\\'" @font-lock-builtin-face))
+      (:match
+       ,(rx bos (|"addmod" "assert" "blobhash" "blockhash" "ecrecover"
+                  "gasleft" "keccak256" "mulmod" "require" "ripemd160"
+                  "selfdestruct" "sha256")
+            eos)
+       @font-lock-builtin-face))
      ["revert" (yul_evm_builtin)] @font-lock-builtin-face)
 
    :feature 'block
@@ -214,7 +241,7 @@
       "external" "for" "from" "function" "if" "import" "indexed" "interface"
       "internal" "is" "let" "library" "memory" "modifier" "override" "payable"
       "private" "public" "pure" "return" "returns" "storage" "struct" "switch"
-      "try" "type" "using" "var" "view" "while"
+      "transient" "try" "type" "using" "var" "view" "while"
       (immutable) (unchecked) (virtual) (yul_leave)]
      @font-lock-keyword-face)
 
@@ -240,12 +267,77 @@
      (comment) @font-lock-comment-face))
   "Font-lock settings for `sol-mode' buffers.")
 
-(defconst sol-mode--font-lock-feature-list
+(defvar sol-mode--font-lock-feature-list
   '((comment definition)
     (keyword string number boolean)
     (pragma type statement builtin block punctuation)
     (variable))
   "Font-lock feature list for `sol-mode' buffers.")
+
+;;; -- Indentation --
+
+(defvar sol-mode--indent-rules
+  `((solidity
+     ((parent-is "source_file") column-0 0)
+
+     ((node-is "}") standalone-parent 0)
+     ((node-is ")") parent-bol 0)
+     ((node-is "]") parent-bol 0)
+
+     ((and (parent-is "comment") c-ts-common-looking-at-star)
+      c-ts-common-comment-start-after-first-star -1)
+     (c-ts-common-comment-2nd-line-matcher
+      c-ts-common-comment-2nd-line-anchor 1)
+     ((parent-is "comment") prev-adaptive-prefix 0)
+
+     ((parent-is "pragma_directive") parent-bol solidity-indent-offset)
+     ((n-p-gp nil nil "pragma_directive") grand-parent solidity-indent-offset)
+     ((parent-is "import_directive") standalone-parent solidity-indent-offset)
+
+     ((node-is "inheritance_specifier") parent-bol solidity-indent-offset)
+     ;; FIXME: this is broken!
+     ((parent-is ,(rx (| "function" "modifier" "yul_function") "_definition"))
+      parent-bol solidity-indent-offset)
+
+     ((node-is ,(rx (| "contract" "enum" "function" "struct") "_body"))
+      parent-bol 0)
+     ((parent-is ,(rx (| "contract" "enum" "function" "struct") "_body"))
+      parent-bol solidity-indent-offset)
+     ((parent-is ,(rx (| "error" "event" "constant_variable" "state_variable")
+                      "_declaration"))
+      parent-bol solidity-indent-offset)
+
+     ((parent-is "return_type_definition") parent-bol solidity-indent-offset)
+     ((parent-is "type_name") parent-bol solidity-indent-offset)
+     ((parent-is "variable_declaration_tuple") parent-bol solidity-indent-offset)
+
+     ((parent-is "array_access") parent-bol solidity-indent-offset)
+     ((parent-is "slice_access") parent-bol solidity-indent-offset)
+     ((parent-is "struct_field_assignment") parent-bol solidity-indent-offset)
+     ((parent-is "assignment_expression") parent-bol solidity-indent-offset)
+     ((parent-is "augmented_assignment_expression") parent-bol solidity-indent-offset)
+     ((parent-is "binary_expression") parent-bol solidity-indent-offset)
+     ((parent-is "call_expression") parent-bol solidity-indent-offset)
+     ((parent-is "meta_type_expression") parent-bol solidity-indent-offset)
+     ((parent-is "parenthesized_expression") parent-bol solidity-indent-offset)
+     ((parent-is "struct_expression") parent-bol solidity-indent-offset)
+     ((parent-is "ternary_expression") parent-bol solidity-indent-offset)
+     ((parent-is "tuple_expression") parent-bol solidity-indent-offset)
+     ((parent-is "type_cast_expression") parent-bol solidity-indent-offset)
+     ((parent-is "assembly_statement") parent-bol solidity-indent-offset)
+     ((parent-is "block_statement") parent-bol solidity-indent-offset)
+     ((node-is "call_struct_argument") parent-bol solidity-indent-offset)
+
+     ;; TODO(nlordell): Member expressions are inversely nested (i.e. the first
+     ;; one in the chain is the deepest in the tree) which means that the
+     ;; indentation rules for member expressions don't quite work at the moment.
+     ;; Since I don't think this is a common issue, just do a best effort for
+     ;; now, expecially since Emacs 31 will introduce a new helper function
+     ;; `c-ts-common-baseline-indent-rule' that solves this.
+     ((parent-is "member_expression") parent-bol solidity-indent-offset)
+
+     (no-node parent-bol 0)))
+  "Indentation rules for `sol-mode' buffers.")
 
 ;;; -- Major Mode --
 
@@ -270,15 +362,17 @@ Key Bindings:
 \\{sol-mode-map}"
   :syntax-table sol-mode--syntax-table
   (when (treesit-ready-p 'solidity)
-    (treesit-parser-create 'solidity)
+    (c-ts-common-comment-setup)
 
-    (setq-local comment-start "// ")
-    (setq-local comment-end "")
-    (setq-local comment-start-skip "\\(?://+\\|/\\*+\\)\\s *")
+    (setq-local electric-indent-chars
+	            (append "{}():;," electric-indent-chars))
+    (setq-local electric-layout-rules
+	            '((?\; . after) (?\{ . after) (?\} . before)))
 
+    (setq-local treesit-primary-parser (treesit-parser-create 'solidity))
     (setq-local treesit-font-lock-settings sol-mode--font-lock-settings)
     (setq-local treesit-font-lock-feature-list sol-mode--font-lock-feature-list)
-
+    (setq-local treesit-simple-indent-rules sol-mode--indent-rules)
     (treesit-major-mode-setup)))
 
 ;;;###autoload
