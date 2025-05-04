@@ -257,6 +257,9 @@
       "!=" ">=" ">" "!" "~" "-" "+" "++" "--" ":=" "delete" "new"]
      @font-lock-operator-face)
 
+   :feature 'yul-label
+   '((yul_label (identifier) @font-lock-constant-face))
+
    :feature 'comment
    '((((comment) @font-lock-preprocessor-face)
       (:match "\\`// SPDX-License-Identifier:" @font-lock-preprocessor-face))
@@ -269,7 +272,7 @@
 
 (defvar sol-mode--font-lock-feature-list
   '((comment definition)
-    (keyword string number boolean)
+    (keyword string number boolean yul-label)
     (pragma type statement builtin block punctuation)
     (variable))
   "Font-lock feature list for `sol-mode' buffers.")
@@ -294,23 +297,22 @@
      ((n-p-gp nil nil "pragma_directive") grand-parent solidity-indent-offset)
      ((parent-is "import_directive") standalone-parent solidity-indent-offset)
 
+     ((node-is ,(rx "_body" eos)) parent-bol 0)
+     ((parent-is ,(rx "_body" eos)) parent-bol solidity-indent-offset)
+
      ((node-is "inheritance_specifier") parent-bol solidity-indent-offset)
-     ;; FIXME: this is broken!
-     ((parent-is ,(rx (| "function" "modifier" "yul_function") "_definition"))
-      parent-bol solidity-indent-offset)
-
-     ((node-is ,(rx (| "contract" "enum" "function" "struct") "_body"))
-      parent-bol 0)
-     ((parent-is ,(rx (| "contract" "enum" "function" "struct") "_body"))
-      parent-bol solidity-indent-offset)
-     ((parent-is ,(rx (| "error" "event" "constant_variable" "state_variable")
-                      "_declaration"))
-      parent-bol solidity-indent-offset)
-
+     ((parent-is "\\`function_definition") parent-bol solidity-indent-offset)
+     ((parent-is "modifier_definition") parent-bol solidity-indent-offset)
      ((parent-is "return_type_definition") parent-bol solidity-indent-offset)
+
+     ((parent-is "error_declaration") parent-bol solidity-indent-offset)
+     ((parent-is "event_declaration") parent-bol solidity-indent-offset)
+     ((parent-is "constant_variable_declaration") parent-bol solidity-indent-offset)
+     ((parent-is "state_variable_declaration") parent-bol solidity-indent-offset)
      ((parent-is "type_name") parent-bol solidity-indent-offset)
      ((parent-is "variable_declaration_tuple") parent-bol solidity-indent-offset)
 
+     ((node-is "call_struct_argument") parent-bol solidity-indent-offset)
      ((parent-is "array_access") parent-bol solidity-indent-offset)
      ((parent-is "slice_access") parent-bol solidity-indent-offset)
      ((parent-is "struct_field_assignment") parent-bol solidity-indent-offset)
@@ -324,9 +326,7 @@
      ((parent-is "ternary_expression") parent-bol solidity-indent-offset)
      ((parent-is "tuple_expression") parent-bol solidity-indent-offset)
      ((parent-is "type_cast_expression") parent-bol solidity-indent-offset)
-     ((parent-is "assembly_statement") parent-bol solidity-indent-offset)
      ((parent-is "block_statement") parent-bol solidity-indent-offset)
-     ((node-is "call_struct_argument") parent-bol solidity-indent-offset)
 
      ;; TODO(nlordell): Member expressions are inversely nested (i.e. the first
      ;; one in the chain is the deepest in the tree) which means that the
@@ -335,6 +335,22 @@
      ;; now, expecially since Emacs 31 will introduce a new helper function
      ;; `c-ts-common-baseline-indent-rule' that solves this.
      ((parent-is "member_expression") parent-bol solidity-indent-offset)
+
+     ((node-is "yul_label") standalone-parent 0)
+     ((parent-is "assembly_statement") parent-bol solidity-indent-offset)
+
+     ((n-p-gp "yul_block" "yul_function_definition" nil) parent-bol 0)
+     ((n-p-gp "yul_block" "yul_if_statement" nil) parent-bol 0)
+     ((n-p-gp "yul_block" "yul_for_statement" nil) parent-bol 0)
+     ((parent-is "yul_block") parent-bol solidity-indent-offset)
+
+     ((parent-is "yul_function_definition") parent-bol solidity-indent-offset)
+     ((parent-is "yul_if_statement") parent-bol solidity-indent-offset)
+     ((parent-is "yul_for_statement") parent-bol solidity-indent-offset)
+     ((parent-is "yul_switch_statement") parent-bol 0)
+     ((parent-is "yul_variable_declaration") parent-bol solidity-indent-offset)
+     ((parent-is "yul_assignment") parent-bol solidity-indent-offset)
+     ((parent-is "yul_function_call") parent-bol solidity-indent-offset)
 
      (no-node parent-bol 0)))
   "Indentation rules for `sol-mode' buffers.")
