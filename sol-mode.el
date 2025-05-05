@@ -165,11 +165,12 @@
       ancestor: (user_defined_type (identifier) @font-lock-type-face))
      (using_directive
       (type_alias (identifier) @font-lock-type-face))
+     (catch_clause (identifier) @font-lock-type-face)
+     (revert_statement
+      error: (expression (identifier)) @font-lock-type-face)
      (emit_statement
       :anchor
       (expression (identifier)) @font-lock-type-face)
-     (revert_statement
-      error: (expression (identifier)) @font-lock-type-face)
      (override_specifier
       (user_defined_type) @font-lock-type-face)
      [(primitive_type) (number_unit)] @font-lock-type-face)
@@ -310,7 +311,6 @@
      ((parent-is "constant_variable_declaration") parent-bol solidity-indent-offset)
      ((parent-is "state_variable_declaration") parent-bol solidity-indent-offset)
      ((parent-is "type_name") parent-bol solidity-indent-offset)
-     ((parent-is "variable_declaration_tuple") parent-bol solidity-indent-offset)
 
      ((node-is "call_struct_argument") parent-bol solidity-indent-offset)
      ((parent-is "array_access") parent-bol solidity-indent-offset)
@@ -326,7 +326,31 @@
      ((parent-is "ternary_expression") parent-bol solidity-indent-offset)
      ((parent-is "tuple_expression") parent-bol solidity-indent-offset)
      ((parent-is "type_cast_expression") parent-bol solidity-indent-offset)
+
+     ((query "(if_statement body: (statement (block_statement)) @body)") parent-bol 0)
+     ((query "(for_statement body: (statement (block_statement)) @body)") parent-bol 0)
+     ((query "(while_statement body: (statement (block_statement)) @body)") parent-bol 0)
+     ((query "(do_while_statement body: (statement (block_statement)) @body)") parent-bol 0)
+     ((n-p-gp "else" "if_statement" nil) parent-bol 0)
+     ((n-p-gp "expression" "while_statement" nil) parent-bol solidity-indent-offset)
+     ((n-p-gp "statement" "while_statement" nil) parent-bol solidity-indent-offset)
+     ((n-p-gp "expression" "do_while_statement" nil) parent-bol solidity-indent-offset)
+     ((n-p-gp "statement" "do_while_statement" nil) parent-bol solidity-indent-offset)
+     ((n-p-gp "block_statement" "try_statement" nil) parent-bol 0)
+     ((n-p-gp "returns" "try_statement" nil) parent-bol 0)
+     ((n-p-gp "catch_clause" "try_statement" nil) parent-bol 0)
+     ((n-p-gp "block_statement" "catch_clause" nil) parent-bol 0)
+     ((n-p-gp "call_argument" "revert_arguments" "revert_statement")
+      parent-bol solidity-indent-offset)
      ((parent-is "block_statement") parent-bol solidity-indent-offset)
+     ((parent-is "variable_declaration_statement") parent-bol solidity-indent-offset)
+     ((parent-is "variable_declaration_tuple") parent-bol solidity-indent-offset)
+     ((parent-is "\\`if_statement") parent-bol solidity-indent-offset)
+     ((parent-is "\\`for_statement") parent-bol solidity-indent-offset)
+     ((parent-is "try_statement") parent-bol solidity-indent-offset)
+     ((parent-is "catch_clause") parent-bol solidity-indent-offset)
+     ((parent-is "emit_statement") parent-bol solidity-indent-offset)
+     ((parent-is "revert_statement") parent-bol 0)
 
      ;; TODO(nlordell): Member expressions are inversely nested (i.e. the first
      ;; one in the chain is the deepest in the tree) which means that the
@@ -341,13 +365,16 @@
 
      ((n-p-gp "yul_block" "yul_function_definition" nil) parent-bol 0)
      ((n-p-gp "yul_block" "yul_if_statement" nil) parent-bol 0)
-     ((n-p-gp "yul_block" "yul_for_statement" nil) parent-bol 0)
+     ((query "(yul_for_statement (yul_block) @block .)") parent-bol 0)
      ((parent-is "yul_block") parent-bol solidity-indent-offset)
+     ((n-p-gp "case" "yul_switch_statement" nil) parent-bol 0)
+     ((n-p-gp "default" "yul_switch_statement" nil) parent-bol 0)
+     ((n-p-gp "yul_block" "yul_switch_statement" nil) parent-bol 0)
 
      ((parent-is "yul_function_definition") parent-bol solidity-indent-offset)
      ((parent-is "yul_if_statement") parent-bol solidity-indent-offset)
      ((parent-is "yul_for_statement") parent-bol solidity-indent-offset)
-     ((parent-is "yul_switch_statement") parent-bol 0)
+     ((parent-is "yul_switch_statement") parent-bol solidity-indent-offset)
      ((parent-is "yul_variable_declaration") parent-bol solidity-indent-offset)
      ((parent-is "yul_assignment") parent-bol solidity-indent-offset)
      ((parent-is "yul_function_call") parent-bol solidity-indent-offset)
