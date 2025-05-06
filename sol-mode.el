@@ -382,7 +382,29 @@
      (no-node parent-bol 0)))
   "Indentation rules for `sol-mode' buffers.")
 
-;;; -- Imenu --
+;;; -- Navigation --
+
+(defvar sol-mode--imenu-settings
+  `(("Constant" "\\`constant_variable_declaration\\'" nil nil)
+    ("Contract" "\\`contract_declaration\\'" nil nil)
+    ("Enum" "\\`enum_declaration\\'" nil nil)
+    ("Error" "\\`error_definition\\'" nil nil)
+    ("Event" "\\`event_definition\\'" nil nil)
+    ("Function"
+     ,(rx bos (| "constructor_definition"
+                 "fallback_receive_definition"
+                 "function_definition"
+                 ;; FIXME: This isn't working for some reason...
+                 "yul_function_definition")
+          eos)
+     nil nil)
+    ("Interface" "\\`interface_declaration\\'" nil nil)
+    ("Library" "\\`library_declaration\\'" nil nil)
+    ("Modifier" "\\`modifier_definition\\'" nil nil)
+    ("Struct" "\\`struct_declaration\\'" nil nil)
+    ("Type" "\\`user_defined_type_definition\\'" nil nil)
+    ("Variable" "\\`state_variable_declaration\\'" nil nil))
+  "Imenu configuration for `sol-mode' buffers.")
 
 (defun sol-mode--defun-name (node)
   "Return the defun name at NODE."
@@ -390,27 +412,104 @@
   (pcase (treesit-node-type node)
     ((or "constructor_definition" "fallback_receive_definition")
      (treesit-node-child node 0))
-    (_ (treesit-node-child-by-field-name node "name")))))
+    ("yul_function_definition"
+     (treesit-node-child node 1))
+    (_
+     (treesit-node-child-by-field-name node "name")))))
 
-(defvar sol-mode--imenu-settings
-  `(("Constant" "constant_variable_declaration" nil nil)
-    ("Contract" "contract_declaration" nil nil)
-    ("Enum" "enum_declaration" nil nil)
-    ("Error" "error_definition" nil nil)
-    ("Event" "event_definition" nil nil)
-    ("Function"
-     ,(rx (| "constructor_definition"
-             "fallback_receive_definition"
-             "function_definition"))
-     nil nil)
-    ("Function" "function_definition" nil nil)
-    ("Interface" "interface_declaration" nil nil)
-    ("Library" "library_declaration" nil nil)
-    ("Modifier" "modifier_definition" nil nil)
-    ("Struct" "struct_declaration" nil nil)
-    ("Type" "user_defined_type_definition" nil nil)
-    ("Variable" "state_variable_declaration" nil nil))
-  "Imenu configuration for `sol-mode' buffers.")
+(defvar sol-mode--defun-type-regexp
+  (rx bos
+      (| "constant_variable_declaration"
+         "constructor_definition"
+         "contract_declaration"
+         "enum_declaration"
+         "error_definition"
+         "event_definition"
+         "fallback_receive_definition"
+         "function_definition"
+         "interface_declaration"
+         "library_declaration"
+         "modifier_definition"
+         "state_variable_declaration"
+         "struct_declaration"
+         "user_defined_type_definition"
+         "yul_function_definition")
+      eos)
+  "Defun regexp for `sol-mode' buffers.")
+
+(defvar sol-mode--thing-settings
+  `((solidity
+     (sexp ,(rx bos (| "array_access"
+                       "assignment_expression"
+                       "augmented_assignment_expression"
+                       "binary_expression"
+                       "boolean_literal"
+                       "call_expression"
+                       "hex_string_literal"
+                       "identifier"
+                       "inline_array_expression"
+                       "member_expression"
+                       "meta_type_expression"
+                       "new_expression"
+                       "number_literal"
+                       "parenthesized_expression"
+                       "payable_conversion_expression"
+                       "primitive_type"
+                       "slice_access"
+                       "string_literal"
+                       "struct_expression"
+                       "ternary_expression"
+                       "tuple_expression"
+                       "type_cast_expression"
+                       "unary_expression"
+                       "unicode_string_literal"
+                       "update_expression"
+                       "user_defined_type"
+                       "yul_boolean"
+                       "yul_decimal_number"
+                       "yul_function_call"
+                       "yul_hex_number"
+                       "yul_string_literal")
+                eos))
+     (defun ,sol-mode--defun-type-regexp)
+     (sentence ,(rx bos (| "assembly_statement"
+                           "block_statement"
+                           "break_statement"
+                           "continue_statement"
+                           "do_while_statement"
+                           "emit_statement"
+                           "expression_statement"
+                           "for_statement"
+                           "if_statement"
+                           "return_statement"
+                           "revert_statement"
+                           "try_statement"
+                           "variable_declaration_statement"
+                           "while_statement"
+                           "yul_assignment"
+                           "yul_block"
+                           "yul_break"
+                           "yul_continue"
+                           "yul_for_statement"
+                           "yul_if_statement"
+                           "yul_label"
+                           "yul_leave"
+                           "yul_switch_statement"
+                           "yul_variable_declaration")
+                    eos))
+     (comment ,(rx bos "comment" eos))
+     (string ,(rx bos (| "string_literal"
+                         "hex_string_literal"
+                         "unicode_string_literal"
+                         "yul_string_literal")
+                  eos))
+     (text ,(rx bos (| "comment"
+                       "string_literal"
+                       "hex_string_literal"
+                       "unicode_string_literal"
+                       "yul_string_literal")
+                eos))))
+  "Thing settings for `sol-mode' buffers.")
 
 ;;; -- Major Mode --
 
@@ -448,6 +547,8 @@ Key Bindings:
     (setq-local treesit-simple-indent-rules sol-mode--indent-rules)
     (setq-local treesit-simple-imenu-settings sol-mode--imenu-settings)
     (setq-local treesit-defun-name-function #'sol-mode--defun-name)
+    (setq-local treesit-defun-type-regexp sol-mode--defun-type-regexp)
+    (setq-local treesit-thing-settings sol-mode--thing-settings)
     (treesit-major-mode-setup)))
 
 ;;;###autoload
