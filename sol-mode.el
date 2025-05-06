@@ -36,6 +36,7 @@
 ;;; TODO:
 
 ;; - Upstream `type Foo = uint256` highlight
+;; - Upstream `library/interface Foo` highlight
 ;; - Upstream `boolean_literal` missing
 ;; - Upstream `using Foo for type` highlight
 ;; - Upstream `error Foo()` highlight
@@ -381,6 +382,36 @@
      (no-node parent-bol 0)))
   "Indentation rules for `sol-mode' buffers.")
 
+;;; -- Imenu --
+
+(defun sol-mode--defun-name (node)
+  "Return the defun name at NODE."
+  (treesit-node-text
+  (pcase (treesit-node-type node)
+    ((or "constructor_definition" "fallback_receive_definition")
+     (treesit-node-child node 0))
+    (_ (treesit-node-child-by-field-name node "name")))))
+
+(defvar sol-mode--imenu-settings
+  `(("Constant" "constant_variable_declaration" nil nil)
+    ("Contract" "contract_declaration" nil nil)
+    ("Enum" "enum_declaration" nil nil)
+    ("Error" "error_definition" nil nil)
+    ("Event" "event_definition" nil nil)
+    ("Function"
+     ,(rx (| "constructor_definition"
+             "fallback_receive_definition"
+             "function_definition"))
+     nil nil)
+    ("Function" "function_definition" nil nil)
+    ("Interface" "interface_declaration" nil nil)
+    ("Library" "library_declaration" nil nil)
+    ("Modifier" "modifier_definition" nil nil)
+    ("Struct" "struct_declaration" nil nil)
+    ("Type" "user_defined_type_definition" nil nil)
+    ("Variable" "state_variable_declaration" nil nil))
+  "Imenu configuration for `sol-mode' buffers.")
+
 ;;; -- Major Mode --
 
 (defvar sol-mode-map
@@ -415,6 +446,8 @@ Key Bindings:
     (setq-local treesit-font-lock-settings sol-mode--font-lock-settings)
     (setq-local treesit-font-lock-feature-list sol-mode--font-lock-feature-list)
     (setq-local treesit-simple-indent-rules sol-mode--indent-rules)
+    (setq-local treesit-simple-imenu-settings sol-mode--imenu-settings)
+    (setq-local treesit-defun-name-function #'sol-mode--defun-name)
     (treesit-major-mode-setup)))
 
 ;;;###autoload
