@@ -119,6 +119,10 @@
    :feature 'definition
    '((contract_declaration
       name: (identifier) @font-lock-type-face)
+     (interface_declaration
+      name: (identifier) @font-lock-type-face)
+     (library_declaration
+      name: (identifier) @font-lock-type-face)
      (struct_declaration
       name: (identifier) @font-lock-type-face)
      (enum_declaration
