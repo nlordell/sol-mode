@@ -83,10 +83,7 @@
  "C-c C-x"
  (lambda ()
    (interactive)
-   (eval-buffer "sol-mode.el")
-   (with-current-buffer "Safe.sol"
-     (revert-buffer-quick)
-     (setq-local treesit--indent-verbose t))))
+   (eval-buffer "sol-mode.el")))
 (keymap-global-set
  "C-c C-s"
  (lambda ()
@@ -107,11 +104,9 @@
      (solidity_version) @font-lock-string-face)
 
    :feature 'string
-   '((hex_string_literal "hex" @font-lock-string-face
-                         (_) @font-lock-string-face)
-     (unicode_string_literal "unicode" @font-lock-string-face
-                             (_) @font-lock-string-face)
-     [(string) (yul_string_literal)] @font-lock-string-face)
+   '([(string) (hex_string_literal) (unicode_string_literal)
+      (yul_string_literal)]
+     @font-lock-string-face)
    :feature 'number
    '([(number_literal) (yul_decimal_number) (yul_hex_number)]
      @font-lock-number-face)
