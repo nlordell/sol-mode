@@ -379,6 +379,7 @@
      ((parent-is "yul_assignment") parent-bol solidity-indent-offset)
      ((parent-is "yul_function_call") parent-bol solidity-indent-offset)
 
+     ((parent-is "ERROR") parent-bol solidity-indent-offset)
      (no-node parent-bol 0)))
   "Indentation rules for `sol-mode' buffers.")
 
@@ -537,9 +538,9 @@ Key Bindings:
     (c-ts-common-comment-setup)
 
     (setq-local electric-indent-chars
-	            (append "{}():;," electric-indent-chars))
+                (append "{}():;," electric-indent-chars))
     (setq-local electric-layout-rules
-	            '((?\; . after) (?\{ . after) (?\} . before)))
+                '((?\; . after) (?\{ . after) (?\} . before)))
 
     (setq-local treesit-primary-parser (treesit-parser-create 'solidity))
     (setq-local treesit-font-lock-settings sol-mode--font-lock-settings)
