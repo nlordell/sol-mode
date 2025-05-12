@@ -78,19 +78,6 @@
     (let ((treesit-language-source-alist `(,solidity-language-source)))
       (treesit-install-language-grammar 'solidity))))
 
-;;; -- DEBUG --
-
-(keymap-global-set
- "C-c C-x"
- (lambda ()
-   (interactive)
-   (eval-buffer "sol-mode.el")))
-(keymap-global-set
- "C-c C-s"
- (lambda ()
-   (interactive)
-   (treesit-explore-mode +1)))
-
 ;;; -- Font Locking --
 
 (defvar sol-mode--font-lock-settings
