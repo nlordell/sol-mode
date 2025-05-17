@@ -5,7 +5,8 @@
 ;; Author:   Nicholas Rodrigues Lordello <n@lordello.net>
 ;; URL:      https://codeberg.org/nlordell/sol-mode
 ;; Keywords: solidity languages
-;; Version:  0.0.1
+;; Version:  0.1.0
+;; Package-Requires: ((emacs "30.1"))
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -26,22 +27,6 @@
 ;; code. Solidity is a statically-typed curly-braces programming
 ;; language designed for developing smart contracts that run on
 ;; Ethereum.
-
-;;; References:
-
-;; https://github.com/ethereum/emacs-solidity/blob/master/solidity-mode.el
-;; https://github.com/bbatsov/neocaml/blob/main/neocaml.el
-;; https://www.masteringemacs.org/article/lets-write-a-treesitter-major-mode
-
-;;; TODO:
-
-;; - Upstream `type Foo = uint256` highlight
-;; - Upstream `library/interface Foo` highlight
-;; - Upstream `boolean_literal` missing
-;; - Upstream `using Foo for type` highlight
-;; - Upstream `error Foo()` highlight
-;; - Propose `// SPDX-License-Identifier:` highligh
-;; - Upstream `transient` highlight
 
 ;;; Code:
 
