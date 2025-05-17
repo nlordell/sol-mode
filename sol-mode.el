@@ -36,12 +36,13 @@
 
 ;;; -- Customization --
 
-(defgroup solidity nil
-  "Major mode for editing Solidity code."
-  :prefix "solidity-"
+(defgroup sol nil
+  "Customization for editing Solidity code."
+  :tag "Solidity"
+  :prefix "sol-"
   :group 'languages)
 
-(defcustom solidity-indent-offset 4
+(defcustom sol-indent-offset 4
   "Number of spaces for indentation."
   :type 'natnum
   :safe #'natnump
@@ -49,18 +50,18 @@
 
 ;;; -- Utilities --
 
-(defconst solidity-language-source
+(defconst sol-mode-language-source
   '(solidity . ("https://github.com/JoranHonig/tree-sitter-solidity"
                 "v1.2.11"))
   "Tree-Sitter Solidity language source.")
 
 ;;;###autoload
-(defun solidity-install-grammar ()
+(defun sol-mode-install-grammar ()
   "Install the Solidity tree-sitter grammar."
   (interactive)
   (unless (treesit-language-available-p 'solidity)
     (message "Installing Solidity tree-sitter grammar")
-    (let ((treesit-language-source-alist `(,solidity-language-source)))
+    (let ((treesit-language-source-alist `(,sol-mode-language-source)))
       (treesit-install-language-grammar 'solidity))))
 
 ;;; -- Font Locking --
@@ -266,62 +267,61 @@
       c-ts-common-comment-2nd-line-anchor 1)
      ((parent-is "comment") prev-adaptive-prefix 0)
 
-     ((parent-is "pragma_directive") parent-bol solidity-indent-offset)
-     ((n-p-gp nil nil "pragma_directive") grand-parent solidity-indent-offset)
-     ((parent-is "import_directive") standalone-parent solidity-indent-offset)
+     ((parent-is "pragma_directive") parent-bol sol-indent-offset)
+     ((n-p-gp nil nil "pragma_directive") grand-parent sol-indent-offset)
+     ((parent-is "import_directive") standalone-parent sol-indent-offset)
 
      ((node-is ,(rx "_body" eos)) parent-bol 0)
-     ((parent-is ,(rx "_body" eos)) parent-bol solidity-indent-offset)
+     ((parent-is ,(rx "_body" eos)) parent-bol sol-indent-offset)
 
-     ((node-is "inheritance_specifier") parent-bol solidity-indent-offset)
-     ((parent-is "\\`function_definition") parent-bol solidity-indent-offset)
-     ((parent-is "modifier_definition") parent-bol solidity-indent-offset)
-     ((parent-is "return_type_definition") parent-bol solidity-indent-offset)
+     ((node-is "inheritance_specifier") parent-bol sol-indent-offset)
+     ((parent-is "\\`function_definition") parent-bol sol-indent-offset)
+     ((parent-is "modifier_definition") parent-bol sol-indent-offset)
+     ((parent-is "return_type_definition") parent-bol sol-indent-offset)
 
-     ((parent-is "error_declaration") parent-bol solidity-indent-offset)
-     ((parent-is "event_declaration") parent-bol solidity-indent-offset)
-     ((parent-is "constant_variable_declaration") parent-bol solidity-indent-offset)
-     ((parent-is "state_variable_declaration") parent-bol solidity-indent-offset)
-     ((parent-is "type_name") parent-bol solidity-indent-offset)
+     ((parent-is "error_declaration") parent-bol sol-indent-offset)
+     ((parent-is "event_declaration") parent-bol sol-indent-offset)
+     ((parent-is "constant_variable_declaration") parent-bol sol-indent-offset)
+     ((parent-is "state_variable_declaration") parent-bol sol-indent-offset)
+     ((parent-is "type_name") parent-bol sol-indent-offset)
 
-     ((node-is "call_struct_argument") parent-bol solidity-indent-offset)
-     ((parent-is "array_access") parent-bol solidity-indent-offset)
-     ((parent-is "slice_access") parent-bol solidity-indent-offset)
-     ((parent-is "struct_field_assignment") parent-bol solidity-indent-offset)
-     ((parent-is "assignment_expression") parent-bol solidity-indent-offset)
-     ((parent-is "augmented_assignment_expression") parent-bol solidity-indent-offset)
-     ((parent-is "binary_expression") parent-bol solidity-indent-offset)
-     ((parent-is "call_expression") parent-bol solidity-indent-offset)
-     ((parent-is "meta_type_expression") parent-bol solidity-indent-offset)
-     ((parent-is "parenthesized_expression") parent-bol solidity-indent-offset)
-     ((parent-is "struct_expression") parent-bol solidity-indent-offset)
-     ((parent-is "ternary_expression") parent-bol solidity-indent-offset)
-     ((parent-is "tuple_expression") parent-bol solidity-indent-offset)
-     ((parent-is "type_cast_expression") parent-bol solidity-indent-offset)
+     ((node-is "call_struct_argument") parent-bol sol-indent-offset)
+     ((parent-is "array_access") parent-bol sol-indent-offset)
+     ((parent-is "slice_access") parent-bol sol-indent-offset)
+     ((parent-is "struct_field_assignment") parent-bol sol-indent-offset)
+     ((parent-is "assignment_expression") parent-bol sol-indent-offset)
+     ((parent-is "augmented_assignment_expression") parent-bol sol-indent-offset)
+     ((parent-is "binary_expression") parent-bol sol-indent-offset)
+     ((parent-is "call_expression") parent-bol sol-indent-offset)
+     ((parent-is "meta_type_expression") parent-bol sol-indent-offset)
+     ((parent-is "parenthesized_expression") parent-bol sol-indent-offset)
+     ((parent-is "struct_expression") parent-bol sol-indent-offset)
+     ((parent-is "ternary_expression") parent-bol sol-indent-offset)
+     ((parent-is "tuple_expression") parent-bol sol-indent-offset)
+     ((parent-is "type_cast_expression") parent-bol sol-indent-offset)
 
      ((query "(if_statement body: (statement (block_statement)) @body)") parent-bol 0)
      ((query "(for_statement body: (statement (block_statement)) @body)") parent-bol 0)
      ((query "(while_statement body: (statement (block_statement)) @body)") parent-bol 0)
      ((query "(do_while_statement body: (statement (block_statement)) @body)") parent-bol 0)
      ((n-p-gp "else" "if_statement" nil) parent-bol 0)
-     ((n-p-gp "expression" "while_statement" nil) parent-bol solidity-indent-offset)
-     ((n-p-gp "statement" "while_statement" nil) parent-bol solidity-indent-offset)
-     ((n-p-gp "expression" "do_while_statement" nil) parent-bol solidity-indent-offset)
-     ((n-p-gp "statement" "do_while_statement" nil) parent-bol solidity-indent-offset)
+     ((n-p-gp "expression" "while_statement" nil) parent-bol sol-indent-offset)
+     ((n-p-gp "statement" "while_statement" nil) parent-bol sol-indent-offset)
+     ((n-p-gp "expression" "do_while_statement" nil) parent-bol sol-indent-offset)
+     ((n-p-gp "statement" "do_while_statement" nil) parent-bol sol-indent-offset)
      ((n-p-gp "block_statement" "try_statement" nil) parent-bol 0)
      ((n-p-gp "returns" "try_statement" nil) parent-bol 0)
      ((n-p-gp "catch_clause" "try_statement" nil) parent-bol 0)
      ((n-p-gp "block_statement" "catch_clause" nil) parent-bol 0)
-     ((n-p-gp "call_argument" "revert_arguments" "revert_statement")
-      parent-bol solidity-indent-offset)
-     ((parent-is "block_statement") parent-bol solidity-indent-offset)
-     ((parent-is "variable_declaration_statement") parent-bol solidity-indent-offset)
-     ((parent-is "variable_declaration_tuple") parent-bol solidity-indent-offset)
-     ((parent-is "\\`if_statement") parent-bol solidity-indent-offset)
-     ((parent-is "\\`for_statement") parent-bol solidity-indent-offset)
-     ((parent-is "try_statement") parent-bol solidity-indent-offset)
-     ((parent-is "catch_clause") parent-bol solidity-indent-offset)
-     ((parent-is "emit_statement") parent-bol solidity-indent-offset)
+     ((n-p-gp "call_argument" "revert_arguments" "revert_statement") parent-bol sol-indent-offset)
+     ((parent-is "block_statement") parent-bol sol-indent-offset)
+     ((parent-is "variable_declaration_statement") parent-bol sol-indent-offset)
+     ((parent-is "variable_declaration_tuple") parent-bol sol-indent-offset)
+     ((parent-is "\\`if_statement") parent-bol sol-indent-offset)
+     ((parent-is "\\`for_statement") parent-bol sol-indent-offset)
+     ((parent-is "try_statement") parent-bol sol-indent-offset)
+     ((parent-is "catch_clause") parent-bol sol-indent-offset)
+     ((parent-is "emit_statement") parent-bol sol-indent-offset)
      ((parent-is "revert_statement") parent-bol 0)
 
      ;; TODO(nlordell): Member expressions are inversely nested (i.e. the first
@@ -330,28 +330,28 @@
      ;; Since I don't think this is a common issue, just do a best effort for
      ;; now, expecially since Emacs 31 will introduce a new helper function
      ;; `c-ts-common-baseline-indent-rule' that solves this.
-     ((parent-is "member_expression") parent-bol solidity-indent-offset)
+     ((parent-is "member_expression") parent-bol sol-indent-offset)
 
      ((node-is "yul_label") standalone-parent 0)
-     ((parent-is "assembly_statement") parent-bol solidity-indent-offset)
+     ((parent-is "assembly_statement") parent-bol sol-indent-offset)
 
      ((n-p-gp "yul_block" "yul_function_definition" nil) parent-bol 0)
      ((n-p-gp "yul_block" "yul_if_statement" nil) parent-bol 0)
      ((query "(yul_for_statement (yul_block) @block .)") parent-bol 0)
-     ((parent-is "yul_block") parent-bol solidity-indent-offset)
+     ((parent-is "yul_block") parent-bol sol-indent-offset)
      ((n-p-gp "case" "yul_switch_statement" nil) parent-bol 0)
      ((n-p-gp "default" "yul_switch_statement" nil) parent-bol 0)
      ((n-p-gp "yul_block" "yul_switch_statement" nil) parent-bol 0)
 
-     ((parent-is "yul_function_definition") parent-bol solidity-indent-offset)
-     ((parent-is "yul_if_statement") parent-bol solidity-indent-offset)
-     ((parent-is "yul_for_statement") parent-bol solidity-indent-offset)
-     ((parent-is "yul_switch_statement") parent-bol solidity-indent-offset)
-     ((parent-is "yul_variable_declaration") parent-bol solidity-indent-offset)
-     ((parent-is "yul_assignment") parent-bol solidity-indent-offset)
-     ((parent-is "yul_function_call") parent-bol solidity-indent-offset)
+     ((parent-is "yul_function_definition") parent-bol sol-indent-offset)
+     ((parent-is "yul_if_statement") parent-bol sol-indent-offset)
+     ((parent-is "yul_for_statement") parent-bol sol-indent-offset)
+     ((parent-is "yul_switch_statement") parent-bol sol-indent-offset)
+     ((parent-is "yul_variable_declaration") parent-bol sol-indent-offset)
+     ((parent-is "yul_assignment") parent-bol sol-indent-offset)
+     ((parent-is "yul_function_call") parent-bol sol-indent-offset)
 
-     ((parent-is "ERROR") parent-bol solidity-indent-offset)
+     ((parent-is "ERROR") parent-bol sol-indent-offset)
      (no-node parent-bol 0)))
   "Indentation rules for `sol-mode' buffers.")
 
