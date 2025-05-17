@@ -49,7 +49,7 @@
 (require 'cc-langs)
 (require 'treesit)
 
-;;; -- Configuration --
+;;; -- Customization --
 
 (defgroup solidity nil
   "Major mode for editing Solidity code."
